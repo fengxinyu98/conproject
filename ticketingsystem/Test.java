@@ -61,12 +61,14 @@ public class Test {
                                 preTime = System.nanoTime() - startTime;
                                 tds.refundTicket(ticket);
                                 long postTime = System.nanoTime() - startTime;
+                               // System.out.println(preTime + " " + postTime + " " + ThreadId.get() + " " + "TicketRefund" + " " + ticket.tid + " " + ticket.passenger + " " + ticket.route + " " + ticket.coach  + " " + ticket.departure + " " + ticket.arrival + " " + ticket.seat);
                                 long curRefundTime = postTime - preTime;
                                 refundTime[id] += curRefundTime;
                                 refundNum[id] += 1;
                             } else {
                                 preTime = System.nanoTime() - startTime;
                                 long postTime = System.nanoTime() - startTime;
+                                //System.out.println(preTime + " " + postTime + " " + ThreadId.get() + " " + "ErrOfRefund");
                                 long curRefundTime = postTime - preTime;
                                 refundTime[id] += curRefundTime;
                                 refundNum[id] += 1;
@@ -79,12 +81,14 @@ public class Test {
                             long preTime = System.nanoTime() - startTime;
                             if ((ticket = tds.buyTicket(passenger, route, departure, arrival)) != null) {
                                 long postTime = System.nanoTime() - startTime;
+                                //System.out.println(preTime + " " + postTime + " " + ThreadId.get() + " " + "TicketBought" + " " + ticket.tid + " " + ticket.passenger + " " + ticket.route + " " + ticket.coach + " " + ticket.departure + " " + ticket.arrival + " " + ticket.seat);
                                 long curBuyTime = postTime - preTime;
                                 buyTime[id] += curBuyTime;
                                 buyNum[id] += 1;
                                 soldTicket.add(ticket);
                             } else {
                                 long postTime = System.nanoTime() - startTime;
+                                //System.out.println(preTime + " " + postTime + " " + ThreadId.get() + " " + "TicketSoldOut" + " " + route + " " + departure+ " " + arrival);
                                 long curBuyTime = postTime - preTime;
                                 buyTime[id] += curBuyTime;
                                 buyNum[id] += 1;
@@ -97,6 +101,7 @@ public class Test {
                             long preTime = System.nanoTime() - startTime;
                             int leftTicket = tds.inquiry(route, departure, arrival);
                             long postTime = System.nanoTime() - startTime;
+                            //System.out.println(preTime + " " + postTime + " " + ThreadId.get() + " " + "RemainTicket" + " " + leftTicket + " " + route+ " " + departure+ " " + arrival);
                             long curInquiryTime = postTime - preTime;
                             inquiryTime[id] += curInquiryTime;
                             inquiryNum[id] += 1;

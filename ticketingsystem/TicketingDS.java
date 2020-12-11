@@ -1,5 +1,6 @@
 package ticketingsystem;
 
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -15,6 +16,7 @@ public class TicketingDS implements TicketingSystem {
     private AtomicLong hashcount;
     private AtomicLong tidcount;
     private ConcurrentHashMap<Long, Ticket> soldtickets;
+    //private Random idrandom;
 
     public TicketingDS() {
         this.routenum = 5;
@@ -31,6 +33,7 @@ public class TicketingDS implements TicketingSystem {
         this.hashcount = new AtomicLong(1);
         this.tidcount = new AtomicLong(1);
         this.soldtickets = new ConcurrentHashMap<>();
+        //this.idrandom = new Random();
     }
 
     public TicketingDS(int routenum, int coachnum, int seatnum, int stationnum, int threadnum) {
@@ -48,6 +51,7 @@ public class TicketingDS implements TicketingSystem {
         this.hashcount = new AtomicLong(1);
         this.tidcount = new AtomicLong(1);
         this.soldtickets = new ConcurrentHashMap<>();
+        //this.idrandom = new Random();
     }
 
     @Override

@@ -1,24 +1,23 @@
 package ticketingsystem;
 
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.AtomicStampedReference;
 
 public class SeatOperation {
     private int stationnum;
-    private int[][][] ramainseats;
+    private AtomicReferenceArray<AtomicReferenceArray<AtomicStampedReference<String>>> ramainseats;
     public long[][] Bitmask;
-    private AtomicStampedReference<Integer> pointer;
 
     public SeatOperation(int allseatnum, int stationnum) {
         this.stationnum = stationnum;
-        this.ramainseats = new int[2][stationnum][stationnum];
+        this.ramainseats = new AtomicReferenceArray<>(stationnum);
         for (int i = 0; i < stationnum; i++) {
+            this.ramainseats.set(i, new AtomicReferenceArray<>(stationnum));
             for (int j = 0; j < i + 1; j++) {
-                this.ramainseats[0][i][j] = 0;
-                this.ramainseats[1][i][j] = 0;
+                this.ramainseats.get(i).set(j, new AtomicStampedReference<>("0", 0));
             }
             for (int j = i + 1; j < stationnum; j++) {
-                this.ramainseats[0][i][j] = allseatnum;
-                this.ramainseats[1][i][j] = allseatnum;
+                this.ramainseats.get(i).set(j, new AtomicStampedReference<>(String.valueOf(allseatnum), 0));
             }
         }
         this.Bitmask = new long[stationnum][stationnum];
@@ -27,52 +26,57 @@ public class SeatOperation {
                 this.Bitmask[i][j] = ((0x1 << (j - i)) - 1) << (stationnum - j - 1);
             }
         }
-        this.pointer = new AtomicStampedReference<>(0, 0);
     }
 
     public int getCurrentSeatsNum(int departure, int arrival) {
         if (departure >= arrival)
             return 0;
-        int curpointer = pointer.getReference();
-        int stamp = pointer.getStamp();
-        int result = ramainseats[curpointer][departure - 1][arrival - 1];
-        while (!pointer.compareAndSet(curpointer, curpointer, stamp, stamp)) {
-            curpointer = pointer.getReference();
-            stamp = pointer.getStamp();
-            result = ramainseats[curpointer][departure - 1][arrival - 1];
+        AtomicStampedReference<String> temp = ramainseats.get(departure - 1).get(arrival - 1);
+        int stamp = temp.getStamp();
+        String result = temp.getReference();
+        while (!temp.compareAndSet(result, result, stamp, stamp)) {
+            temp = ramainseats.get(departure - 1).get(arrival - 1);
+            stamp = temp.getStamp();
+            result = temp.getReference();
         }
-        return result;
+        return Integer.parseInt(result);
     }
 
     public boolean hasRemainSeat(int departure, int arrival) {
         return getCurrentSeatsNum(departure, arrival) > 0;
     }
 
-    public synchronized void refreshSeatNum(int departure, int arrival, long oldseat, long newseat, boolean ops) {
+    public void refreshSeatNum(int departure, int arrival, long oldseat, long newseat, boolean ops) {
         if (ops) {
-            int curpointer = 1 - pointer.getReference();
-            for (int i = 0; i < stationnum - 1; i++) {
-                for (int j = i + 1; j < stationnum; j++) {
+            for (int i = 0; i < arrival - 1; i++) {
+                for (int j = Math.max(i + 1, departure); j < stationnum; j++) {
                     if (((oldseat & Bitmask[i][j]) == 0) && ((newseat & Bitmask[i][j]) != 0)) {
-                        ramainseats[curpointer][i][j] = ramainseats[1 - curpointer][i][j] - 1;
-                    } else {
-                        ramainseats[curpointer][i][j] = ramainseats[1 - curpointer][i][j];
+                        AtomicStampedReference<String> temp = ramainseats.get(i).get(j);
+                        int stamp = temp.getStamp();
+                        String result = temp.getReference();
+                        while (!temp.compareAndSet(result, String.valueOf(Integer.parseInt(result) - 1), stamp, stamp)) {
+                            temp = ramainseats.get(i).get(j);
+                            stamp = temp.getStamp();
+                            result = temp.getReference();
+                        }
                     }
                 }
             }
-            pointer.set(curpointer, pointer.getStamp() + 1);
         } else {
-            int curpointer = 1 - pointer.getReference();
-            for (int i = 0; i < stationnum - 1; i++) {
-                for (int j = i + 1; j < stationnum; j++) {
+            for (int i = 0; i < arrival - 1; i++) {
+                for (int j = Math.max(i + 1, departure); j < stationnum; j++) {
                     if (((oldseat & Bitmask[i][j]) != 0) && ((newseat & Bitmask[i][j]) == 0)) {
-                        ramainseats[curpointer][i][j] = ramainseats[1 - curpointer][i][j] + 1;
-                    } else {
-                        ramainseats[curpointer][i][j] = ramainseats[1 - curpointer][i][j];
+                        AtomicStampedReference<String> temp = ramainseats.get(i).get(j);
+                        int stamp = temp.getStamp();
+                        String result = temp.getReference();
+                        while (!temp.compareAndSet(result, String.valueOf(Integer.parseInt(result) + 1), stamp, stamp)) {
+                            temp = ramainseats.get(i).get(j);
+                            stamp = temp.getStamp();
+                            result = temp.getReference();
+                        }
                     }
                 }
             }
-            pointer.set(curpointer, pointer.getStamp() + 1);
         }
     }
 
