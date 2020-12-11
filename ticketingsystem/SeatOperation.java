@@ -30,24 +30,21 @@ public class SeatOperation {
     }
 
     public int getCurrentSeatsNum(int departure, int arrival) {
-        if (departure >= arrival)
-            return 0;
-        int[][] curremain = ramainseatsptr.getReference();
-        int stamp = ramainseatsptr.getStamp();
-        int result = curremain[departure - 1][arrival - 1];
-        while (!ramainseatsptr.compareAndSet(curremain, curremain, stamp, stamp)) {
-            curremain = ramainseatsptr.getReference();
-            stamp = ramainseatsptr.getStamp();
-            result = curremain[departure - 1][arrival - 1];
+        while (true) {
+            int[][] curremain = ramainseatsptr.getReference();
+            int stamp = ramainseatsptr.getStamp();
+            int result = curremain[departure - 1][arrival - 1];
+            if (ramainseatsptr.compareAndSet(curremain, curremain, stamp, stamp)) {
+                return result;
+            }
         }
-        return result;
     }
 
     public boolean hasRemainSeat(int departure, int arrival) {
         return getCurrentSeatsNum(departure, arrival) > 0;
     }
 
-    public void refreshSeatNum(int departure, int arrival, long oldseat, long newseat, boolean ops) {
+    public void refreshSeatNum(long oldseat, long newseat, boolean ops) {
         if (ops) {
             while (true) {
                 int[][] curremain = ramainseatsptr.getReference();

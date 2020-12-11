@@ -29,7 +29,7 @@ public class Train {
                 long curseat = seats[expseatnum].get();
                 while (!isoccupied(curseat, departure, arrival)) {
                     if (seats[expseatnum].compareAndSet(curseat, setoccupied(curseat, departure, arrival))) {
-                        seatops.refreshSeatNum(departure, arrival, curseat, setoccupied(curseat, departure, arrival), true);
+                        seatops.refreshSeatNum(curseat, setoccupied(curseat, departure, arrival), true);
                         return expseatnum;
                     }
                     curseat = seats[expseatnum].get();
@@ -44,7 +44,7 @@ public class Train {
         while(true){
             long curseat = seats[expseatnum].get();
             if(seats[expseatnum].compareAndSet(curseat, resetoccupied(curseat, departure, arrival))){
-                seatops.refreshSeatNum(departure, arrival, curseat, resetoccupied(curseat, departure, arrival), false);
+                seatops.refreshSeatNum(curseat, resetoccupied(curseat, departure, arrival), false);
                 return true;
             }
         }

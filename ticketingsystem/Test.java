@@ -16,8 +16,8 @@ public class Test {
     final static int stationnum = 16; // station is designed from 1 to 16
 
     final static int testnum = 100000;
-    final static int retpc = 40; // return ticket operation is 10% percent
-    final static int buypc = 80; // buy ticket operation is 30% percent
+    final static int retpc = 10; // return ticket operation is 10% percent
+    final static int buypc = 40; // buy ticket operation is 30% percent
     final static int inqpc = 100; //inquiry ticket operation is 60% percent
 
     private static long[] buyTime = new long[threadnum];
@@ -33,7 +33,7 @@ public class Test {
         return "passenger" + uid;
     }
 
-    public static void main(String[] args) throws InterruptedException, FileNotFoundException {
+    public static void main(String[] args) throws InterruptedException{
 
         Thread[] threads = new Thread[threadnum];
 
