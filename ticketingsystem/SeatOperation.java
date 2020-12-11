@@ -1,23 +1,24 @@
 package ticketingsystem;
 
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.AtomicStampedReference;
 
 public class SeatOperation {
     private int stationnum;
-    private AtomicReferenceArray<AtomicReferenceArray<AtomicStampedReference<String>>> ramainseats;
+    private AtomicStampedReference<int[][]> ramainseatsptr;
     public long[][] Bitmask;
 
     public SeatOperation(int allseatnum, int stationnum) {
         this.stationnum = stationnum;
-        this.ramainseats = new AtomicReferenceArray<>(stationnum);
+        int[][] ramainseats = new int[stationnum][stationnum];
+        this.ramainseatsptr = new AtomicStampedReference<>(ramainseats, 0);
         for (int i = 0; i < stationnum; i++) {
-            this.ramainseats.set(i, new AtomicReferenceArray<>(stationnum));
             for (int j = 0; j < i + 1; j++) {
-                this.ramainseats.get(i).set(j, new AtomicStampedReference<>("0", 0));
+                ramainseats[i][j] = 0;
+                ramainseats[i][j] = 0;
             }
             for (int j = i + 1; j < stationnum; j++) {
-                this.ramainseats.get(i).set(j, new AtomicStampedReference<>(String.valueOf(allseatnum), 0));
+                ramainseats[i][j] = allseatnum;
+                ramainseats[i][j] = allseatnum;
             }
         }
         this.Bitmask = new long[stationnum][stationnum];
@@ -31,15 +32,15 @@ public class SeatOperation {
     public int getCurrentSeatsNum(int departure, int arrival) {
         if (departure >= arrival)
             return 0;
-        AtomicStampedReference<String> temp = ramainseats.get(departure - 1).get(arrival - 1);
-        int stamp = temp.getStamp();
-        String result = temp.getReference();
-        while (!temp.compareAndSet(result, result, stamp, stamp)) {
-            temp = ramainseats.get(departure - 1).get(arrival - 1);
-            stamp = temp.getStamp();
-            result = temp.getReference();
+        int[][] curremain = ramainseatsptr.getReference();
+        int stamp = ramainseatsptr.getStamp();
+        int result = curremain[departure - 1][arrival - 1];
+        while (!ramainseatsptr.compareAndSet(curremain, curremain, stamp, stamp)) {
+            curremain = ramainseatsptr.getReference();
+            stamp = ramainseatsptr.getStamp();
+            result = curremain[departure - 1][arrival - 1];
         }
-        return Integer.parseInt(result);
+        return result;
     }
 
     public boolean hasRemainSeat(int departure, int arrival) {
@@ -48,33 +49,39 @@ public class SeatOperation {
 
     public void refreshSeatNum(int departure, int arrival, long oldseat, long newseat, boolean ops) {
         if (ops) {
-            for (int i = 0; i < arrival - 1; i++) {
-                for (int j = Math.max(i + 1, departure); j < stationnum; j++) {
-                    if (((oldseat & Bitmask[i][j]) == 0) && ((newseat & Bitmask[i][j]) != 0)) {
-                        AtomicStampedReference<String> temp = ramainseats.get(i).get(j);
-                        int stamp = temp.getStamp();
-                        String result = temp.getReference();
-                        while (!temp.compareAndSet(result, String.valueOf(Integer.parseInt(result) - 1), stamp, stamp)) {
-                            temp = ramainseats.get(i).get(j);
-                            stamp = temp.getStamp();
-                            result = temp.getReference();
+            while (true) {
+                int[][] curremain = ramainseatsptr.getReference();
+                int stamp = ramainseatsptr.getStamp();
+                int[][] localremain = new int[stationnum][stationnum];
+                for (int i = 0; i < stationnum - 1; i++) {
+                    for (int j = i + 1; j < stationnum; j++) {
+                        if (((oldseat & Bitmask[i][j]) == 0) && ((newseat & Bitmask[i][j]) != 0)) {
+                            localremain[i][j] = curremain[i][j] - 1;
+                        } else {
+                            localremain[i][j] = curremain[i][j];
                         }
                     }
                 }
+                if (ramainseatsptr.compareAndSet(curremain, localremain, stamp, stamp + 1)) {
+                    break;
+                }
             }
         } else {
-            for (int i = 0; i < arrival - 1; i++) {
-                for (int j = Math.max(i + 1, departure); j < stationnum; j++) {
-                    if (((oldseat & Bitmask[i][j]) != 0) && ((newseat & Bitmask[i][j]) == 0)) {
-                        AtomicStampedReference<String> temp = ramainseats.get(i).get(j);
-                        int stamp = temp.getStamp();
-                        String result = temp.getReference();
-                        while (!temp.compareAndSet(result, String.valueOf(Integer.parseInt(result) + 1), stamp, stamp)) {
-                            temp = ramainseats.get(i).get(j);
-                            stamp = temp.getStamp();
-                            result = temp.getReference();
+            while (true) {
+                int[][] curremain = ramainseatsptr.getReference();
+                int stamp = ramainseatsptr.getStamp();
+                int[][] localremain = new int[stationnum][stationnum];
+                for (int i = 0; i < stationnum - 1; i++) {
+                    for (int j = i + 1; j < stationnum; j++) {
+                        if (((oldseat & Bitmask[i][j]) != 0) && ((newseat & Bitmask[i][j]) == 0)) {
+                            localremain[i][j] = curremain[i][j] + 1;
+                        } else {
+                            localremain[i][j] = curremain[i][j];
                         }
                     }
+                }
+                if (ramainseatsptr.compareAndSet(curremain, localremain, stamp, stamp + 1)) {
+                    break;
                 }
             }
         }
