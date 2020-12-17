@@ -23,6 +23,7 @@ public class Train {
     }
 
     public int trainBuyTicket(int begincoach, int beginseat, int departure, int arrival) {
+        //long threadid = Thread.currentThread().getId();
         while (seatops.hasRemainSeat(departure, arrival)) {
             for (int i = 0; i < allseatnum; i++) {
                 int expseatnum = (begincoach * seatnum + beginseat + i) % allseatnum;
@@ -32,6 +33,9 @@ public class Train {
                         seatops.refreshSeatNum(curseat, setoccupied(curseat, departure, arrival), true);
                         return expseatnum;
                     }
+                    //else {
+                    //    System.out.println(threadid + "线程买票锁定CAS失败");
+                    //}
                     curseat = seats[expseatnum].get();
                 }
             }
@@ -40,13 +44,16 @@ public class Train {
     }
 
     public boolean trainRefundTicket(int coach, int seat, int departure, int arrival) {
+        //long threadid = Thread.currentThread().getId();
         int expseatnum = (coach - 1) * seatnum + seat - 1;
         while(true){
             long curseat = seats[expseatnum].get();
             if(seats[expseatnum].compareAndSet(curseat, resetoccupied(curseat, departure, arrival))){
                 seatops.refreshSeatNum(curseat, resetoccupied(curseat, departure, arrival), false);
                 return true;
-            }
+            }//else {
+                //System.out.println(threadid + "线程退票锁定CAS失败");
+            //}
         }
     }
 
