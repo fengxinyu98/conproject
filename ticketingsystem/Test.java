@@ -1,11 +1,8 @@
 package ticketingsystem;
 
-import java.io.FileNotFoundException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Random;
 import java.lang.Thread;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class Test {
 
