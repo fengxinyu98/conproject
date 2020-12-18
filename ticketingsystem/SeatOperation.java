@@ -1,12 +1,13 @@
 package ticketingsystem;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicStampedReference;
 
 public class SeatOperation {
     private int stationnum;
     private AtomicStampedReference<int[][]> ramainseatsptr;
     public long[][] Bitmask;
-    private ThreadLocal<int[][]> LocalRamain;
+    private ConcurrentHashMap<Long,int[][]> LocalRamain;
 
     public SeatOperation(int allseatnum, int stationnum) {
         this.stationnum = stationnum;
@@ -26,7 +27,7 @@ public class SeatOperation {
                 this.Bitmask[i][j] = ((0x1 << (j - i)) - 1) << (stationnum - j - 1);
             }
         }
-        this.LocalRamain = new ThreadLocal<>();
+        this.LocalRamain = new ConcurrentHashMap<>();
     }
 
     public int getCurrentSeatsNum(int departure, int arrival) {
@@ -47,15 +48,15 @@ public class SeatOperation {
     }
 
     public void refreshSeatNum(long oldseat, long newseat, boolean ops) {
+        long theardid = Thread.currentThread().getId();
+        int[][] localremain = LocalRamain.computeIfAbsent(theardid,k->new int[stationnum][stationnum]);
         int[][] curremain;
-        int[][] localremain;
         int stamp;
         if (ops) {
             while (true) {
                 curremain = ramainseatsptr.getReference();
-                localremain = LocalRamain.get();
                 stamp = ramainseatsptr.getStamp();
-                if ((curremain == localremain) || localremain == null) {
+                if (curremain == localremain) {
                     localremain = new int[stationnum][stationnum];
                     for (int i = 0; i < stationnum - 1; i++) {
                         for (int j = i + 1; j < stationnum; j++) {
@@ -67,7 +68,8 @@ public class SeatOperation {
                         }
                     }
                     if (ramainseatsptr.compareAndSet(curremain, localremain, stamp, stamp + 1)) {
-                        LocalRamain.set(localremain);
+                        LocalRamain.remove(theardid);
+                        LocalRamain.put(theardid,localremain);
                         break;
                     }
                 } else {
@@ -88,9 +90,8 @@ public class SeatOperation {
         } else {
             while (true) {
                 curremain = ramainseatsptr.getReference();
-                localremain = LocalRamain.get();
                 stamp = ramainseatsptr.getStamp();
-                if ((curremain == localremain) || localremain == null) {
+                if (curremain == localremain) {
                     localremain = new int[stationnum][stationnum];
                     for (int i = 0; i < stationnum - 1; i++) {
                         for (int j = i + 1; j < stationnum; j++) {
@@ -102,7 +103,8 @@ public class SeatOperation {
                         }
                     }
                     if (ramainseatsptr.compareAndSet(curremain, localremain, stamp, stamp + 1)) {
-                        LocalRamain.set(localremain);
+                        LocalRamain.remove(theardid);
+                        LocalRamain.put(theardid,localremain);
                         break;
                     }
                 } else {
