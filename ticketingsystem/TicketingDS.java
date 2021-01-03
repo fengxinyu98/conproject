@@ -56,6 +56,17 @@ public class TicketingDS implements TicketingSystem {
 
     @Override
     public Ticket buyTicket(String passenger, int route, int departure, int arrival) {
+        if ((passenger == null) ||
+                (route <= 0) ||
+                (route > routenum) ||
+                (departure <= 0) ||
+                (departure > stationnum) ||
+                (arrival <= 0) ||
+                (arrival > stationnum) ||
+                (departure >= arrival)
+        ) {
+            return null;
+        }
         Train curtrain = trains[route - 1];
         long hashtid = this.hashcount.getAndIncrement();
         long threadid = Thread.currentThread().getId();
@@ -78,6 +89,16 @@ public class TicketingDS implements TicketingSystem {
 
     @Override
     public int inquiry(int route, int departure, int arrival) {
+        if ((route <= 0) ||
+                (route > routenum) ||
+                (departure <= 0) ||
+                (departure > stationnum) ||
+                (arrival <= 0) ||
+                (arrival > stationnum) ||
+                (departure >= arrival)
+        ) {
+            return 0;
+        }
         return trains[route - 1].ticketinquiry(departure, arrival);
     }
 
@@ -92,7 +113,7 @@ public class TicketingDS implements TicketingSystem {
                     (exsitticket.departure == ticket.departure) &&
                     (exsitticket.arrival == ticket.arrival)
             ) {
-                soldtickets.remove(ticket.tid,ticket);
+                soldtickets.remove(ticket.tid, ticket);
                 return trains[ticket.route - 1].trainRefundTicket(ticket.coach, ticket.seat, ticket.departure, ticket.arrival);
 
             }
